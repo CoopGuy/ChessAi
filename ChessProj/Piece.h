@@ -4,7 +4,6 @@
 class Piece
 {
 	public:
-
 	enum pieceType
 	{
 		empty,
@@ -16,22 +15,27 @@ class Piece
 		king
 	};
 
+	private:
+	pieceType type;
+	std::string color;
+	bool hasMoved;
+
+	public:
+
 	//constructor
 	Piece();
 	Piece( pieceType type );
 	
 	//getter and setter
-	pieceType getType();
-	void setType( pieceType newType );
-	std::string getColor();
-	void setColor(std::string newColor);
-
+	pieceType getType() { return type; };
+	void setType( pieceType newType ) { type = newType; };
+	std::string getColor() {	return color;	};
+	void setColor( std::string newColor ){	color = newColor;	};
+	bool getHasMoved(){	return hasMoved;	};
+	void moved(){	hasMoved = true;	};
 
 	//overrides
 	void operator=( const Piece &Obj );
-	void print();
+	void print() const;
 
-	private:
-	pieceType type;
-	std::string color;
 };

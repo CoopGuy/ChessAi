@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include "Location.h"
+#include <vector>
 
 
 class Board
@@ -10,17 +11,19 @@ class Board
 	private:
 
 	Piece boardarr[8][8];
+
 	bool gameEnded;
 	std::string activeTurn;
-	bool pawnMoved2;
+	Location pawnThatMoved;
 	bool check;
+	bool enpassant;
 
-	bool checkPawn( Location location, std::string activeTurn );
-	bool checkKnight( Location location );
-	bool checkBishop( Location location );
-	bool checkRook( Location location );
-	bool checkQueen( Location location );
-	bool checkKing( Location location );
+	bool checkPawn( Location &l );
+	bool checkKnight( Location &l );
+	bool checkBishop( Location &l );
+	bool checkRook( Location &l );
+	bool checkQueen( Location &l );
+	bool checkKing( Location &l );
 
 	public:
 
@@ -35,16 +38,24 @@ class Board
 	std::string turn() const { return activeTurn; };
 
 	//"Getter"
-	void printBoard();
+	void printBoard() const;
 
 
 	//Useful Behavior
+	
 	bool validityTest( std::string move );
 	void doMove( std::string move, bool needsTest = false );
+	
 	bool static parse( std::string move, Location &location );
-	Piece::pieceType changePawn();
 	static int conv( char a );
+	Piece *pieceAtLocation( Location &var, bool tf );
+
+	Piece::pieceType changePawn();
+
 	bool checkDiagonal( Location loc );
 	bool checkLinear( Location loc );
 
+	std::vector<Location> getPossibleDiagsFromPos( Location &loc, int lim = 8 );
+	std::vector<Location> getPossibleLinearsFromPos( Location &loc, int lim = 8);
+	bool moveInList( Location &l, std::vector<Location> list ) const;
 };

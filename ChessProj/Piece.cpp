@@ -11,30 +11,12 @@ Piece::Piece()
 {
 	type = pieceType::empty;
 	color = "None";
+	hasMoved = false;
 }
 Piece::Piece( pieceType type )
 {
 	this->type = type;
-}
-
-Piece::pieceType Piece::getType()
-{
-	return type;
-}
-
-void Piece::setType(pieceType newType)
-{
-	type = newType;
-}
-
-std::string Piece::getColor()
-{
-	return color;
-}
-
-void Piece::setColor( std::string newColor )
-{
-	color = newColor;
+	hasMoved = false;
 }
 
 void Piece::operator=( const Piece &Obj )
@@ -43,7 +25,7 @@ void Piece::operator=( const Piece &Obj )
 	color = Obj.color;
 }
 
-void Piece::print()
+void Piece::print() const
 {
 	//// Set console code page to UTF-8 so console known how to interpret string data
 	//std::cout.flush();
