@@ -23,6 +23,7 @@ void Piece::operator=( const Piece &Obj )
 {
 	type = Obj.type;
 	color = Obj.color;
+	hasMoved = Obj.hasMoved;
 }
 
 void Piece::print() const

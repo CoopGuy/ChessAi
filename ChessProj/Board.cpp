@@ -48,8 +48,9 @@ void Board::setVals()
 	boardarr[7][3].setType( Piece::king );
 	boardarr[7][4].setType( Piece::queen );
 
-	boardarr[4][4].setType( Piece::queen );
-	boardarr[4][4].setColor( "Black" );
+	//Test queen
+	//boardarr[4][4].setType( Piece::queen );
+	//boardarr[4][4].setColor( "Black" );
 }
 
 void Board::printBoard() const
@@ -109,7 +110,7 @@ Piece *Board::pieceAtLocation( Location &var, bool tf )
 	return temp;
 }
 
-
+//---------------------------------------------------------------------------\\
 
 //checks if inputted move is valid
 bool Board::validityTest( std::string move )
@@ -190,7 +191,7 @@ void Board::doMove( std::string move, bool needsTest)
 	//change the pieces
 	boardarr[coords.ty()][coords.tx()] = boardarr[coords.fy()][coords.fx()];
 	boardarr[coords.fy()][coords.fx()] = Piece();
-	
+	boardarr[coords.ty()][coords.tx()].moved();
 	//check for enpassant
 	if ( enpassant )
 	{
@@ -260,7 +261,7 @@ Piece::pieceType Board::changePawn()
 	} while ( true );
 }
 
-
+//---------------------------------------------------------------------------\\
 
 //converts user input board locations to valid array addresses ie: a1c5 --> loc[][] = [[0,0],[3,4]]
 bool Board::parse( std::string move, Location &location)
@@ -285,7 +286,7 @@ int Board::conv( char a )
 	return a;
 }
 
-
+//---------------------------------------------------------------------------\\
 
 std::vector<Location> Board::getPossibleDiagsFromPos( Location &l, int lim)
 {
@@ -419,8 +420,6 @@ bool Board::moveInList( Location &l, std::vector<Location> list ) const
 	return false;
 }
 
-
-
 /*
 	All of the following functions provide a legality check of a given inputted move for their respective pieces
 
@@ -453,7 +452,6 @@ bool Board::checkPawn( Location &l )
 		}
 		else
 		{
-			tempPiece->moved();
 			return true;
 		}
 	}
@@ -500,54 +498,3 @@ bool Board::checkKing( Location &l )
 	bool OppPieceCanMoveTo	= false;
 	return KingCanMoveTo && !OppPieceCanMoveTo;
 }
-
-
-
-
-
-//DEPRECATED
-bool Board::checkDiagonal( Location loc )
-{
-	const int y1 = loc.fy();
-	const int x1 = loc.fx();
-	const int y2 = loc.ty();
-	const int x2 = loc.tx();
-
-	Piece targetSquare = boardarr[x2][y2];
-	//checks for perfectly diagonal direction
-	if ( ( x2 - x1 ) != 0 && abs( ( y2 - y1 ) / ( x2 - x1 ) ) != 1 )return false;
-	//checks for empty or filled by opposite color piece on target square
-	if ( targetSquare.getType() != Piece::empty && targetSquare.getColor() == activeTurn )return false;
-
-	//checks for clear path
-	//TODO: create checks for cleared paths
-	//y-y1 = m(x-x1)
-	int slope = ( y2 - y1 ) / ( x2 - x1 );
-
-	int lowy = std::min( y1, y2 );
-	int maxy = std::max( y1, y2 );
-	int xTerm;
-	if ( lowy == y1 )xTerm = x1;
-	else xTerm = x2;
-
-	int count = 1;
-	for ( int y = lowy + 1; y < maxy; y++ )
-	{
-		if ( boardarr[xTerm + ( count * slope )][y].getType() != Piece::empty )return false;
-		count++;
-	}
-
-	return true;
-}
-
-bool Board::checkLinear( Location loc )
-{
-	const int y1 = loc.fy();
-	const int x1 = loc.fx();
-	const int y2 = loc.ty();
-	const int x2 = loc.tx();
-
-	if ( !( ( y1 == y2 ) ^ ( x1 == x2 ) ) )return false;
-	return false;
-}
-//DEPRECATED

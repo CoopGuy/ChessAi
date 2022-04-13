@@ -52,9 +52,6 @@ class Board
 
 	Piece::pieceType changePawn();
 
-	bool checkDiagonal( Location loc );
-	bool checkLinear( Location loc );
-
 	std::vector<Location> getPossibleDiagsFromPos( Location &loc, int lim = 8 );
 	std::vector<Location> getPossibleLinearsFromPos( Location &loc, int lim = 8);
 	bool moveInList( Location &l, std::vector<Location> list ) const;
