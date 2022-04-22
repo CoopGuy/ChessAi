@@ -66,7 +66,7 @@ class Location
 		return temp != -1;
 	}
 
-	bool inBounds(std::string toorfrom)//true for checking to, false for checking from
+	bool inBounds(std::string toorfrom)//TO for checking to, FROM for checking from
 	{
 		if ( toorfrom == "FROM" )
 		{
@@ -87,11 +87,27 @@ class Location
 	}
 
 	//copy operator reassignment
-	void operator= ( Location *input )
+	void operator = ( Location *input )
 	{
 		input->locdata[0][1] = fx();
 		input->locdata[0][0] = fy();
 		input->locdata[1][1] = tx();
 		input->locdata[1][0] = ty();
+	}
+
+	bool operator !=( const Location &Obj )
+	{
+		return	locdata[0][1] != Obj.locdata[0][1] ||
+				locdata[0][0] != Obj.locdata[0][0] ||
+				locdata[1][1] != Obj.locdata[1][1] ||
+				locdata[1][0] != Obj.locdata[1][0];
+	}
+
+	bool operator==( const Location &Obj )
+	{
+		return	locdata[0][1] == Obj.locdata[0][1] &&
+			locdata[0][0] == Obj.locdata[0][0] &&
+			locdata[1][1] == Obj.locdata[1][1] &&
+			locdata[1][0] == Obj.locdata[1][0];
 	}
 };

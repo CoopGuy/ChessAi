@@ -2,55 +2,99 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+
 #include "Board.h"
 #include "Piece.h"
 
 Board::Board()
 {
 	gameEnded = false;
-	activeTurn = "White";
-	pawnThatMoved = Location();
 	check = false;
-	enpassant = false;
+
+	activeTurn = "White";
+
+	pawnThatMoved = Location();
+	didEnpassant = false;
+
+	emptySquare = new Piece();
 	setVals();
+}
+
+Board::Board( const Board &Obj )
+{
+	gameEnded = Obj.gameEnded;
+	check = Obj.check;
+
+	activeTurn = Obj.activeTurn;
+
+	pawnThatMoved = Obj.pawnThatMoved;
+	didEnpassant = Obj.didEnpassant;
+
+	emptySquare = Obj.emptySquare;
+	for ( int x = 0; x < Obj.whitePieces.size(); x++ )
+	{
+		whitePieces.push_back( Obj.whitePieces.at( x ) );
+		blackPieces.push_back( Obj.blackPieces.at( x ) );
+		for ( int x = 0; x < 8; x++ )
+		{
+			for ( int y = 0; y < 8; y++ )
+			{
+				boardarr[y][x] = Obj.boardarr[y][x];
+			}
+		}
+	}
 }
 
 void Board::setVals()
 {
+	whitePieces.push_back( new Piece( Piece::rook,	"White" ) );
+	whitePieces.push_back( new Piece( Piece::knight,"White" ) );
+	whitePieces.push_back( new Piece( Piece::bishop,"White" ) );
+	whitePieces.push_back( new Piece( Piece::king,	"White" ) );
+	whitePieces.push_back( new Piece( Piece::queen,	"White" ) );
+	whitePieces.push_back( new Piece( Piece::bishop,"White" ) );
+	whitePieces.push_back( new Piece( Piece::knight,"White" ) );
+	whitePieces.push_back( new Piece( Piece::rook,	"White" ) );
+
+	blackPieces.push_back( new Piece( Piece::rook,	"Black" ) );
+	blackPieces.push_back( new Piece( Piece::knight,"Black" ) );
+	blackPieces.push_back( new Piece( Piece::bishop,"Black" ) );
+	blackPieces.push_back( new Piece( Piece::king,	"Black" ) );
+	blackPieces.push_back( new Piece( Piece::queen,	"Black" ) );
+	blackPieces.push_back( new Piece( Piece::bishop,"Black" ) );
+	blackPieces.push_back( new Piece( Piece::knight,"Black" ) );
+	blackPieces.push_back( new Piece( Piece::rook,	"Black" ) );
+	
 	for ( int x = 0; x < 8; x++ )
 	{
-		boardarr[1][x].setType( Piece::pawn );
-		boardarr[6][x].setType( Piece::pawn );
-
-		boardarr[0][x].setColor( "White" );
-		boardarr[1][x].setColor( "White" );
-
-		boardarr[6][x].setColor( "Black" );
-		boardarr[7][x].setColor( "Black" );
+		whitePieces.push_back( new Piece( Piece::pawn, "White" ) );
+		blackPieces.push_back( new Piece( Piece::pawn, "Black" ) );
 	}
-	boardarr[0][0].setType( Piece::rook );
-	boardarr[0][7].setType( Piece::rook );
-	boardarr[7][0].setType( Piece::rook );
-	boardarr[7][7].setType( Piece::rook );
-	
-	boardarr[0][1].setType( Piece::knight );
-	boardarr[0][6].setType( Piece::knight );
-	boardarr[7][1].setType( Piece::knight );
-	boardarr[7][6].setType( Piece::knight );
+	for ( int x = 0; x < 8; x++ )
+	{
+		boardarr[0][x] = ( whitePieces.at( x ) );
+		boardarr[1][x] = ( whitePieces.at( x + 8 ) );
+		for ( int y = 2; y < 6; y++ )
+		{
+			boardarr[y][x] = emptySquare;
+		}
+		boardarr[6][x] = ( blackPieces.at( x + 8 ) );
+		boardarr[7][x] = ( blackPieces.at( x ) );
+	}
+	Location temp;
+	for ( int x = 0; x < 8; x++ )
+	{
+		temp.assignAll( x, 0 );
+		whitePieces.at( x )->setLoc(temp,false);
+		temp.assignAll( x, 1 );
+		whitePieces.at( x + 8 )->setLoc( temp, false );
 
-	boardarr[0][2].setType( Piece::bishop );
-	boardarr[0][5].setType( Piece::bishop );
-	boardarr[7][2].setType( Piece::bishop );
-	boardarr[7][5].setType( Piece::bishop );
+		temp.assignAll( x, 6 );
+		blackPieces.at( x + 8)->setLoc( temp, false );
+		temp.assignAll( x, 7 );
+		blackPieces.at( x )->setLoc( temp, false );
+	}
 
-	boardarr[0][3].setType( Piece::king );
-	boardarr[0][4].setType( Piece::queen );
-	boardarr[7][3].setType( Piece::king );
-	boardarr[7][4].setType( Piece::queen );
-
-	//Test queen
-	//boardarr[4][4].setType( Piece::queen );
-	//boardarr[4][4].setColor( "Black" );
 }
 
 void Board::printBoard() const
@@ -78,7 +122,7 @@ void Board::printBoard() const
 		std::cout << "| ";
 		for ( int y = 0; y < 8; y++ )
 		{
-			boardarr[x][y].print();
+			boardarr[x][y]->print();
 		}
 		std::cout << std::endl;
 		std::cout << "   ";
@@ -92,25 +136,19 @@ void Board::printBoard() const
 }
 
 //gets a ref to a piece at a location specified by a location object
-//if tf is (t)rue  returns ref to piece at location that location is going to
-//it tf is (f)alse returns ref to piece at location that location is coming from
+//if tf is (t)rue  returns ref to piece at location that location is going  (t)o
+//it tf is (f)alse returns ref to piece at location that location is coming (f)rom
 Piece *Board::pieceAtLocation( Location &var, bool tf )
 {
-	Piece *temp;
-
 	if ( !tf )
 	{
-		temp = &boardarr[var.fy()][var.fx()];
+		return boardarr[var.fy()][var.fx()];
 	}
-	else
-	{
-		temp = &boardarr[var.ty()][var.tx()];
-	}
-
-	return temp;
+	return boardarr[var.ty()][var.tx()];
+	
 }
 
-//---------------------------------------------------------------------------\\
+
 
 //checks if inputted move is valid
 bool Board::validityTest( std::string move )
@@ -120,65 +158,33 @@ bool Board::validityTest( std::string move )
 	
 	if ( !parse( move, location ) )return false;
 	
-	Piece *tem = &boardarr[location.fy()][location.fx()];
-	Piece *tem2 = &boardarr[location.ty()][location.tx()];
+	Piece *tem = boardarr[location.fy()][location.fx()];
+	Piece *tem2 = boardarr[location.ty()][location.tx()];
 
 	Piece::pieceType piece = tem->getType();
 	std::string color = tem->getColor();
 
-	if ( activeTurn != color ) return false;//check if turn and piece color match
-	if ( color == tem2->getColor() && tem2->getType() != Piece::empty ) return false;//check if piece to be moved exists
+	//check if turn and piece color match
+	if ( activeTurn != color ) return false;
+	// check if space that piece is moving to is occupied
+	if ( tem->getColor() == tem2->getColor() && tem2->getType() != Piece::empty ) return false;
 
-	switch ( piece )
+	
+	moveValidity = checkMove( location );
+	if ( moveValidity && piece == Piece::pawn )
 	{
-		case Piece::empty:
-		{
-			moveValidity = false;
-		}
-		break;
-
-		case Piece::pawn:
-		{
-			moveValidity = checkPawn( location );
-		}
-		break;
-
-		case Piece::knight:
-		{
-			moveValidity = checkKnight( location );
-		}
-		break;
-
-		case Piece::bishop:
-		{
-			moveValidity = checkBishop( location );
-		}
-		break;
-
-		case Piece::rook:
-		{
-			moveValidity = checkRook( location );
-		}
-		break;
-
-		case Piece::queen:
-		{
-			moveValidity = checkQueen( location );
-		}
-		break;
-
-		case Piece::king:
-		{
-			moveValidity = checkKing( location );
-		}
-		break;
-
-		default:
-		{ moveValidity = false; }
-		break;
+		if ( abs( location.fy() - location.ty() ) == 2 )pawnThatMoved = location;
+		if ( location.fx() != location.tx() && pieceAtLocation( location, true )->getType() == Piece::empty ) didEnpassant = true;
 	}
 
+	if ( moveValidity && pawnThatMoved != location ) pawnThatMoved = Location();
 	return moveValidity;
+}
+
+// calls the checkmove function of the piece at point (l.fx, l.fy)
+bool Board::checkMove( Location &l )
+{
+	return pieceAtLocation( l, false )->checkMove( l, this );
 }
 
 //edits board array to reflect a completed move
@@ -188,36 +194,40 @@ void Board::doMove( std::string move, bool needsTest)
 	Location coords;
 	parse( move, coords );
 
-	//change the pieces
-	boardarr[coords.ty()][coords.tx()] = boardarr[coords.fy()][coords.fx()];
-	boardarr[coords.fy()][coords.fx()] = Piece();
-	boardarr[coords.ty()][coords.tx()].moved();
 	//check for enpassant
-	if ( enpassant )
+	if ( didEnpassant )
 	{
-		enpassant = false;
-		if ( activeTurn == "White" )
-		{
-			boardarr[coords.ty() - 1][coords.tx()] = Piece();
-		}
-		else
-		{
-			boardarr[coords.ty() + 1][coords.tx()] = Piece();
-		}
+		//change the pieces
+		int pos = 1 + ( -2 * ( activeTurn != "White" ) );
+		didEnpassant = false;
+
+		boardarr[coords.ty() - pos][coords.tx()]->capture();
+		boardarr[coords.ty() - pos][coords.tx()] = emptySquare;
+	}
+	else
+	{
+		boardarr[coords.ty()][coords.tx()]->capture();
+	}
+
+	boardarr[coords.ty()][coords.tx()] = boardarr[coords.fy()][coords.fx()];
+	boardarr[coords.fy()][coords.fx()] = emptySquare;
+	boardarr[coords.ty()][coords.tx()]->moved();
+
+	//check if pawn is at end of board
+	if ( boardarr[coords.tx()][coords.ty()]->getType() == Piece::pawn && (coords.tx() == 7 || coords.tx() == 0))
+	{
+		boardarr[coords.tx()][coords.ty()]->setType( changePawn() );
 	}
 	
-	//check if pawn is at end of board
-	if ( boardarr[coords.tx()][coords.ty()].getType() == Piece::pawn && (coords.tx() == 7 || coords.tx() == 0))
-	{
-		boardarr[coords.tx()][coords.ty()].setType( changePawn() );
-	}
+	//update location stored in piece class
+	boardarr[coords.ty()][coords.tx()]->setLoc( coords );
 
 	//change turn
 	if ( activeTurn == "Black" )activeTurn = "White";
 	else activeTurn = "Black";
 }
 
-// changes pawns that got to the 8th rank
+// changes piece type for pawns that got to the 8th rank
 Piece::pieceType Board::changePawn()
 {
 
@@ -261,9 +271,9 @@ Piece::pieceType Board::changePawn()
 	} while ( true );
 }
 
-//---------------------------------------------------------------------------\\
 
-//converts user input board locations to valid array addresses ie: a1c5 --> loc[][] = [[0,0],[3,4]]
+
+//converts user input board locations to valid array addresses ie: a1c5 --> [[0,0],[3,4]]
 bool Board::parse( std::string move, Location &location)
 {
 	if ( conv( move[0] ) + 1 &&  conv( move[1] ) + 1 && conv( move[2] ) + 1 &&  conv( move[3] ) + 1 )//check  to ensure input is allowed chars and addresses are in board width/length
@@ -274,7 +284,7 @@ bool Board::parse( std::string move, Location &location)
 	return false;
 }
 
-// converts user input chars a - h and nums 1 - 8 to 0 - 7 for boardarr addressing (allows for capital and lowercase)
+// converts user input chars a - h and nums 1 - 8 to chars in range 0 - 7 for boardarr addressing (allows for capital and lowercase)
 int Board::conv( char a )
 {
 	//check for 1st 8 nums and upper/lower case chars
@@ -286,215 +296,25 @@ int Board::conv( char a )
 	return a;
 }
 
-//---------------------------------------------------------------------------\\
 
-std::vector<Location> Board::getPossibleDiagsFromPos( Location &l, int lim)
+
+std::vector<Location> Board::getAllMoves( std::string turn )
 {
-	bool upRight = true;
-	bool upLeft = true;
-	bool dnright = true;
-	bool dnleft = true;
+	//output vector init
+	std::vector<Location> outputVec;
+	// reserve avg possible moves for a player +10 for program efficiency
+	outputVec.reserve( 50 ); 
+	// get a vector of refs to the 'turn' colored pieces
+	std::vector<Piece*> *list = this->getPieceVec( turn ); 
 
-	std::vector<Location> list;
-	list.reserve( 15 );
-
-	int counter = 1;
-	Location temp;
-	Piece *tempPiece = nullptr;
-
-	while ( (upRight || upLeft || dnright || dnleft) && counter <= lim )
+	std::vector<Location> temp;
+	for ( int x = 0; x < list->size(); x++ )
 	{
+		//get moves of a given piece
+		temp = list->at( x )->getMovesOfPiece( turn, this, false );
 
-		temp.assignAll( l.fx() + counter, l.fy() + counter, l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		upRight = upRight && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-
-		if ( upRight )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-
-		temp.assignAll( l.fx() + counter, l.fy() - counter, l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		upLeft = upLeft && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-
-		if ( upLeft )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-
-		temp.assignAll( l.fx() - counter, l.fy() + counter, l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		dnright = dnright && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-
-		if ( dnright )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-
-		temp.assignAll( l.fx() - counter, l.fy() - counter, l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		dnleft = dnleft && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-		if ( dnleft )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-		counter++;
+		//insert moves into output vector
+		outputVec.insert( outputVec.end(), temp.begin(), temp.end() );
 	}
-
-	return list;
-}
-
-std::vector<Location> Board::getPossibleLinearsFromPos( Location &l, int lim )
-{
-	bool Left	= true;
-	bool Right	= true;
-	bool Up		= true;
-	bool Down	= true;
-
-	std::vector<Location> list;
-	list.reserve( 15 );
-
-	int counter = 1;
-	Location temp;
-	Piece *tempPiece = nullptr;
-
-	while ( ( Left || Right || Up || Down ) && counter <= lim )
-	{
-
-		temp.assignAll( l.fx() + counter, l.fy(), l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		Left = Left && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-
-		if ( Left )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-
-		temp.assignAll( l.fx() - counter, l.fy(), l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		Right = Right && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-
-		if ( Right )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-
-		temp.assignAll( l.fx(), l.fy() + counter, l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		Up = Up && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-
-		if ( Up )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-
-		temp.assignAll( l.fx(), l.fy() - counter, l.tx(), l.ty() );
-		tempPiece = pieceAtLocation( temp, false );
-		Down = Down && temp.inBounds( "FROM" ) && ( tempPiece->getType() == Piece::empty || tempPiece->getColor() != activeTurn );
-		if ( Down )
-		{
-			Location t( temp );
-			list.push_back( t );
-		}
-		counter++;
-	}
-
-
-	return list;
-}
-
-bool Board::moveInList( Location &l, std::vector<Location> list ) const
-{
-	for ( unsigned int x = 0; x < list.size(); x++ )
-	{
-		if ( l.tx() == list.at(x).fx() && l.ty() == list.at(x).fy() )return true;
-	}
-	return false;
-}
-
-/*
-	All of the following functions provide a legality check of a given inputted move for their respective pieces
-
-	All of the following functions (are/will be) able to take an in bounds Location and judge
-	whether a piece can do that given move then return a bool that matches that ability:
-	true for yes, false for no (I would think this is obvious but you never know)
-*/
-
-bool Board::checkPawn( Location &l )
-{
-
-	int temp = l.ty() - l.fy();
-
-	//if temp is + piece is traversing up board if - then down
-	if ( temp == 0 || ( activeTurn == "White" && temp < 0 ) || ( activeTurn == "Black" && temp > 0 ) )
-		return false;
-	
-	if ( moveInList( l, getPossibleLinearsFromPos( l, 2 ) ) && l.fx() == l.tx() )
-	{
-		if ( pieceAtLocation( l, true )->getType() != Piece::empty )return false;
-		Piece *tempPiece = pieceAtLocation( l, false );
-		if ( abs( temp ) == 2 )
-		{
-			if ( tempPiece->getHasMoved() == true )
-			{
-				return false;
-			}
-			pawnThatMoved = l;
-			return true;
-		}
-		else
-		{
-			return true;
-		}
-	}
-	if ( moveInList( l, getPossibleDiagsFromPos( l, 1 ) ) )
-	{
-		Piece *locat = pieceAtLocation( l, true );
-		// check if diag piece is not the same color
-		if ( ( locat->getColor() != activeTurn && locat->getColor() != "None" ) )
-		{
-			return true;
-		}
-		//en passant 
-		else if ( l.tx() == pawnThatMoved.tx() && abs( l.ty() - pawnThatMoved.ty() ) == 1 ) {
-			enpassant = true;
-			return true;
-		}
-	}
-	return false;
-}
-
-bool Board::checkKnight( Location &l )
-{
-	return ( (( abs( l.fx() - l.tx() ) == 1 && abs( l.fy() - l.ty() ) == 2 ) || ( abs( l.fx() - l.tx() ) == 2 && abs( l.fy() - l.ty() ) == 1 )) && pieceAtLocation( l, true )->getColor() != activeTurn );
-}
-
-bool Board::checkBishop( Location &l )
-{
-	return moveInList( l, getPossibleDiagsFromPos( l ) );
-}
-
-bool Board::checkRook( Location &l )
-{
-	return moveInList( l, getPossibleLinearsFromPos( l ) );
-}
-
-bool Board::checkQueen( Location &l )
-{
-	return moveInList( l, getPossibleDiagsFromPos( l ) ) || moveInList( l, getPossibleLinearsFromPos( l ) );
-}
-
-bool Board::checkKing( Location &l )
-{
-	bool KingCanMoveTo		= moveInList( l, getPossibleDiagsFromPos( l, 1 ) ) || moveInList( l, getPossibleLinearsFromPos( l, 1 ) );
-	bool OppPieceCanMoveTo	= false;
-	return KingCanMoveTo && !OppPieceCanMoveTo;
+	return outputVec;
 }

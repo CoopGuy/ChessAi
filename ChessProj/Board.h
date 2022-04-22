@@ -1,58 +1,59 @@
 #pragma once
 #include "Piece.h"
+#include "Location.h"
+
+
 #include <iostream>
 #include <string>
-#include "Location.h"
 #include <vector>
 
 
 class Board
 {
-	private:
-
-	Piece boardarr[8][8];
+	protected:
+	Piece* boardarr[8][8];
+	std::vector<Piece*> whitePieces;
+	std::vector<Piece*> blackPieces;
 
 	bool gameEnded;
 	std::string activeTurn;
-	Location pawnThatMoved;
 	bool check;
-	bool enpassant;
-
-	bool checkPawn( Location &l );
-	bool checkKnight( Location &l );
-	bool checkBishop( Location &l );
-	bool checkRook( Location &l );
-	bool checkQueen( Location &l );
-	bool checkKing( Location &l );
+	Location pawnThatMoved;
+	bool didEnpassant = false;
+	Piece *emptySquare;
 
 	public:
 
 	//constructor
 	Board();
-
+	Board( const Board &Obj );
 	void setVals();//constructor helper
 
-
 	//Getters
+	std::vector<Piece*> *getPieceVec( std::string str )
+	{
+		if ( str == "White" )return &whitePieces;
+		else return &blackPieces;
+	}
 	bool ended() const { return gameEnded; };
 	std::string turn() const { return activeTurn; };
+	Location pawnMove() { return pawnThatMoved; };
+	Piece *pieceAtLocation( Location &var, bool tf );
 
-	//"Getter"
+	//Print
 	void printBoard() const;
 
 
-	//Useful Behavior
-	
+	//Move related behavior
+	bool checkMove( Location &l );
 	bool validityTest( std::string move );
 	void doMove( std::string move, bool needsTest = false );
-	
-	bool static parse( std::string move, Location &location );
-	static int conv( char a );
-	Piece *pieceAtLocation( Location &var, bool tf );
-
 	Piece::pieceType changePawn();
 
-	std::vector<Location> getPossibleDiagsFromPos( Location &loc, int lim = 8 );
-	std::vector<Location> getPossibleLinearsFromPos( Location &loc, int lim = 8);
-	bool moveInList( Location &l, std::vector<Location> list ) const;
+	std::vector<Location> getAllMoves( std::string turn );
+
+	//Player Interface related functions 
+	bool static parse( std::string move, Location &location );
+	static int conv( char a );
+	
 };
