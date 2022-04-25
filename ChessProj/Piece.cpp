@@ -288,20 +288,20 @@ std::vector<Location> Piece::getPossiblePawnMoves( Board *boardRef )
 
 	//checks for forward movement of a pawn
 	tempLocation = Location( l.fx(), l.fy(), l.fx(), l.fy() + pos );
-	if ( boardRef->pieceAtLocation( tempLocation, true )->getColor() == "None" )list.push_back( Location( tempLocation ) );
+	if ( tempLocation.inBounds( "TO" ) && boardRef->pieceAtLocation( tempLocation, true )->getColor() == "None" )list.push_back( Location( tempLocation ) );
 
 	tempLocation = Location( l.fx(), l.fy(), l.fx(), l.fy() + ( 2 * pos ) );
-	if ( !( boardRef->pieceAtLocation( l, false )->getHasMoved() ) && boardRef->pieceAtLocation( tempLocation, true )->getType() == Piece::empty ) list.push_back( Location( tempLocation ) );
+	if ( tempLocation.inBounds( "TO" ) && !( boardRef->pieceAtLocation( l, false )->getHasMoved() ) && boardRef->pieceAtLocation( tempLocation, true )->getType() == Piece::empty ) list.push_back( Location( tempLocation ) );
 
 	//check for diagonal attack positive slope (and en passant)
 	tempLocation = Location( l.fx(), l.fy(), l.fx() + 1, l.fy() + pos );
-	if ( ( boardRef->pieceAtLocation( tempLocation, true )->getColor() != color && boardRef->pieceAtLocation( tempLocation, true )->getColor() != "None" ) ||
+	if ( tempLocation.inBounds( "TO" ) && ( boardRef->pieceAtLocation( tempLocation, true )->getColor() != color && boardRef->pieceAtLocation( tempLocation, true )->getColor() != "None" ) ||
 		( boardRef->pawnMove().ty() == tempLocation.fy() && boardRef->pawnMove().tx() - tempLocation.fx() == 1 ) )list.push_back( tempLocation );
 
 
 	//check for diagonal attack negative slope (and en passant)
 	tempLocation = Location( l.fx(), l.fy(), l.fx() - 1, l.fy() + pos );
-	if ( ( boardRef->pieceAtLocation( tempLocation, true )->getColor() != color && boardRef->pieceAtLocation( tempLocation, true )->getColor() != "None" ) ||
+	if ( tempLocation.inBounds("TO") && ( boardRef->pieceAtLocation(tempLocation, true)->getColor() != color && boardRef->pieceAtLocation(tempLocation, true)->getColor() != "None" ) ||
 		( boardRef->pawnMove().ty() == tempLocation.fy() && boardRef->pawnMove().tx() - tempLocation.fx() == -1) )list.push_back( tempLocation );
 
 	return list;
@@ -318,44 +318,43 @@ std::vector<Location> Piece::getPossibleKingMoves( Board *boardRef )
 
 std::vector<Location> Piece::getMovesOfPiece( std::string turn, Board *boardRef, bool checks )
 {
-	std::vector<Location> err;
+	std::vector<Location> temp;
 	switch ( boardRef->pieceAtLocation( l, false )->getType() )
 	{
 		case Piece::pawn:
-		return getPossiblePawnMoves( boardRef );
+		temp = getPossiblePawnMoves( boardRef );
 		break;
 		case Piece::knight:
-		return getPossibleKnightMoves( boardRef );
+		temp = getPossibleKnightMoves( boardRef );
 		break;
 		case Piece::bishop:
-		return getPossibleDiagsFromPos( boardRef );
+		temp = getPossibleDiagsFromPos( boardRef );
 		break;
 		case Piece::rook:
-		return getPossibleLinearsFromPos( boardRef );
+		temp = getPossibleLinearsFromPos( boardRef );
 		break;
 		case Piece::queen:
 		{
 			std::vector<Location> temp1 = getPossibleLinearsFromPos( boardRef );
 			std::vector<Location> temp2 = getPossibleDiagsFromPos( boardRef );
 			temp1.insert( temp1.begin(), temp2.begin(), temp2.end() );
-			return temp1;
+			temp = temp1;
 		}
 		break;
 		case Piece::king:
 		{
-			std::vector<Location> temp = getPossibleKingMoves( boardRef );
-			for ( int x = temp.size() - 1; x >= 0; x-- )
-			{
-				if ( checks && TheoreticalBoard( boardRef, temp.at(x) ).KingIsInCheck() )
-				{
-					temp.erase( temp.begin() + x );
-				}
-			}
-			return temp;
+			temp = getPossibleKingMoves( boardRef );
 		}
 		break;
 	}
-	return err;
+	for ( int x = temp.size() - 1; x >= 0; x-- )
+	{
+		if ( checks && TheoreticalBoard( boardRef, temp.at( x ) ).KingIsInCheck() )
+		{
+			temp.erase( temp.begin() + x );
+		}
+	}
+	return temp;
 }
 
 bool Piece::checkMove(Location &l, Board *boardRef)

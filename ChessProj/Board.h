@@ -17,10 +17,11 @@ class Board
 
 	bool gameEnded;
 	std::string activeTurn;
-	bool check;
+	std::string result;
 	Location pawnThatMoved;
 	bool didEnpassant = false;
 	Piece *emptySquare;
+	int count = 0;
 
 	public:
 
@@ -39,6 +40,8 @@ class Board
 	std::string turn() const { return activeTurn; };
 	Location pawnMove() { return pawnThatMoved; };
 	Piece *pieceAtLocation( Location &var, bool tf );
+	bool kingInCheck();
+	std::string getResult() { if ( gameEnded )return result; else return "There was a bug that is preventing the result from displaying"; };
 
 	//Print
 	void printBoard() const;
@@ -47,10 +50,12 @@ class Board
 	//Move related behavior
 	bool checkMove( Location &l );
 	bool validityTest( std::string move );
-	void doMove( std::string move, bool needsTest = false );
+	bool validityTest( Location move );
+	bool doMove( std::string move, bool needsTest = false );
+	bool doMove( Location move, bool needsTest = false );
 	Piece::pieceType changePawn();
 
-	std::vector<Location> getAllMoves( std::string turn );
+	std::vector<Location> getAllMoves( std::string turn = "-1");
 
 	//Player Interface related functions 
 	bool static parse( std::string move, Location &location );

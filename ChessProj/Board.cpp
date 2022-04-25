@@ -9,7 +9,6 @@
 Board::Board()
 {
 	gameEnded = false;
-	check = false;
 
 	activeTurn = "White";
 
@@ -23,7 +22,6 @@ Board::Board()
 Board::Board( const Board &Obj )
 {
 	gameEnded = Obj.gameEnded;
-	check = Obj.check;
 
 	activeTurn = Obj.activeTurn;
 
@@ -149,14 +147,20 @@ Piece *Board::pieceAtLocation( Location &var, bool tf )
 }
 
 
-
-//checks if inputted move is valid
 bool Board::validityTest( std::string move )
 {
-	bool moveValidity = false;
 	Location location;
-	
+
 	if ( !parse( move, location ) )return false;
+	else return validityTest( location );
+}
+
+
+//checks if inputted move is valid
+bool Board::validityTest( Location location )
+{
+	bool moveValidity = false;
+
 	
 	Piece *tem = boardarr[location.fy()][location.fx()];
 	Piece *tem2 = boardarr[location.ty()][location.tx()];
@@ -187,12 +191,22 @@ bool Board::checkMove( Location &l )
 	return pieceAtLocation( l, false )->checkMove( l, this );
 }
 
-//edits board array to reflect a completed move
-void Board::doMove( std::string move, bool needsTest)
+
+bool Board::doMove( std::string move, bool needsTest )
 {
-	if ( needsTest )validityTest( move );
 	Location coords;
 	parse( move, coords );
+	return doMove( coords, needsTest );
+}
+
+//edits board array to reflect a completed move
+bool Board::doMove( Location coords, bool needsTest)
+{
+	if ( needsTest && !validityTest( coords ) )return false;
+
+
+	if ( pieceAtLocation( coords, false )->getType() == Piece::pawn )count++;
+	else count = 0;
 
 	//check for enpassant
 	if ( didEnpassant )
@@ -225,6 +239,28 @@ void Board::doMove( std::string move, bool needsTest)
 	//change turn
 	if ( activeTurn == "Black" )activeTurn = "White";
 	else activeTurn = "Black";
+	std::vector<Location> temp = getAllMoves( activeTurn );
+	for ( int x = temp.size() - 1; x >= 0; x-- )
+	{
+		if ( !checkMove( temp.at( x ) ) )temp.erase( temp.begin() + x );
+	}
+	if ( temp.size() == 0 )
+	{
+		if(kingInCheck()){
+			result = activeTurn + " was checkmated!";
+		}
+		else
+		{
+			result = "Stalemate";
+		}
+		gameEnded = true;
+	}
+	if ( count == 100 )
+	{
+		result = "Stalemate";
+		gameEnded = true;
+	}
+	return true;
 }
 
 // changes piece type for pawns that got to the 8th rank
@@ -271,7 +307,18 @@ Piece::pieceType Board::changePawn()
 	} while ( true );
 }
 
-
+bool Board::kingInCheck()
+{
+	std::vector<Location> temp = getAllMoves( activeTurn );
+	Piece *ptr;
+	if ( activeTurn == "White" )ptr = whitePieces.at(3);
+	else ptr = blackPieces.at( 3 );
+	for ( int x = 0; x < temp.size(); x++ )
+	{
+		if ( temp.at( x ).tx() == ptr->getLoc().fx() && temp.at( x ).ty() == ptr->getLoc().fy() )return true;
+	}
+	return false;
+}
 
 //converts user input board locations to valid array addresses ie: a1c5 --> [[0,0],[3,4]]
 bool Board::parse( std::string move, Location &location)
@@ -296,10 +343,9 @@ int Board::conv( char a )
 	return a;
 }
 
-
-
 std::vector<Location> Board::getAllMoves( std::string turn )
 {
+	if ( turn == "-1" )turn = activeTurn;
 	//output vector init
 	std::vector<Location> outputVec;
 	// reserve avg possible moves for a player +10 for program efficiency
